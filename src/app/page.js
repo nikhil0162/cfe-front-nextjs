@@ -1,8 +1,58 @@
+"use client"
+import { useAuth } from "@/components/authProvider";
+import { ThemeToggleButton } from "@/components/themeToggleButton";
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import useSWR from 'swr'
+
+
+const fetcher = async url => {
+  const res = await fetch(url)
+  console.log(res, url);
+ 
+  // If the status code is not in the range 200-299,
+  // we still try to parse and throw it.
+  if (!res.ok) {
+    const error = new Error('An error occurred while fetching the data.')
+    // Attach extra info to the error object.
+    error.info = await res.json()
+    error.status = res.status
+    throw error
+  }
+ 
+  return res.json()
+}
+ 
 
 export default function Home() {
+
+  const { data, error, isLoading } = useSWR('/api/waitlists', fetcher)
+
+  // console.log(data, error);
+
+  const auth = useAuth()
+
+  useEffect(()=>{
+    if(error?.status === 401){
+      auth.loginRequiredRedirect()
+    }
+  }, [auth, error])
+  
+  if (error) return <div>failed to load</div>
+  if (isLoading) return <div>loading...</div>
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
+        <div>
+          {auth.isAuthenticated ? "Hello user": "Hello Guest"}
+        </div>
+        <div>
+          <ThemeToggleButton/>
+        </div>
+
+      <div>
+        {JSON.stringify(data)}
+      </div>
       <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
         <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
           Get started by editing&nbsp;
